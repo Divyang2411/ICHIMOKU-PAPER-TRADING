@@ -24,16 +24,6 @@ All three use one engine (`ichimoku/engine.py`), so the paper trader follows the
 
 You can change any of these in `ichimoku/config.py`.
 
-### Your notebook's result (real Nifty 200 data, 2015-01-01 → 2026-09-25)
-
-These numbers come from the output of the attached notebook run, not from this repo:
-
-| Final equity | Total return | CAGR | Max DD | Sharpe | Trades | Win rate | Profit factor |
-|---|---|---|---|---|---|---|---|
-| ₹76,68,562 | +1,433.7% | 26.2% | −28.3% (Feb→May 2020) | 1.56 | 132 | 52.3% | 5.25 |
-
-`python main.py backtest` recreates this run. The engine is tested to match the notebook's `simulate()` trade for trade (see *Tests*).
-
 ## Setup
 
 ```bash
