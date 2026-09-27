@@ -66,6 +66,30 @@ Useful flags:
 - `--limit 20`: only the first 20 symbols, for a quick test.
 - `--demo`: use synthetic random prices with no internet. This is only for checking that everything works; the numbers mean nothing.
 
+### Local website (just for you)
+
+```bash
+python main.py serve                    # opens http://127.0.0.1:8000
+```
+
+On macOS you can instead double-click `start_dashboard.command`. The first time, it creates `.venv`, installs everything and pulls the latest paper state; then it opens the dashboard. It listens only on your own computer (127.0.0.1), so nobody else can reach it.
+
+| Page | What it shows |
+|---|---|
+| **Dashboard** | Paper equity, return, cash, open positions with their stop and target, latest executions, today's buy signals |
+| **Paper portfolio** | The full interactive paper-trading report, rebuilt automatically whenever the account changes |
+| **Today's scan** | All Nifty 200 stocks with signal, score, Kijun distance and ROC |
+| **Backtest** | The full backtest report |
+| **Activity** | Buttons for every job and a live log of the one running |
+
+Buttons:
+
+- **Sync from GitHub** (`git pull`): brings in the paper trades the daily GitHub Action made.
+- **Scan Nifty 200**, **Rebuild paper report**, **Run full backtest**.
+- **Run paper trade now**, on the Activity page: only use this if you trade the account on your Mac instead of GitHub. Using both makes the two copies of `paper/` clash.
+
+Stop the site with Ctrl+C. To open it from your phone on the same Wi-Fi, run `python main.py serve --host 0.0.0.0` and visit `http://<your-mac-ip>:8000`. Anyone on that network can then open it too.
+
 ### What a daily paper run does
 
 Each run processes every new bar since the last run, in the same order the backtest uses:
@@ -118,6 +142,8 @@ ichimoku/engine.py          portfolio engine (backtest + paper), metrics, JSON s
 ichimoku/scanner.py         daily scan
 ichimoku/paper.py           paper-trading driver
 ichimoku/report.py          HTML/PNG report
+ichimoku/web.py             local website (python main.py serve)
+start_dashboard.command     macOS double-click launcher
 tests/                      engine == notebook; paper day-by-day == backtest
 notebooks/                  original research notebook
 ```

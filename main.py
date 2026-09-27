@@ -7,6 +7,7 @@
   python main.py paper run           process new daily bars: exits, then entries at close
   python main.py paper status        print positions / equity without downloading
   python main.py paper report        HTML report of the paper account
+  python main.py serve               local website: dashboard, reports, one-click updates
 
 Add --demo to any command to use synthetic prices (offline smoke test; numbers are meaningless).
 """
@@ -121,7 +122,9 @@ def cmd_paper(args):
         if args.demo:
             data = synthetic_data()
         else:
-            data = load_data(list(dict.fromkeys(load_nifty200_symbols() + list(e.pos))), refresh=False)
+            # reuse the local price cache; download only on a fresh clone that has none
+            data = load_data(list(dict.fromkeys(load_nifty200_symbols(refresh=False) + list(e.pos))),
+                             refresh=not os.path.exists(C.CACHE_FILE))
         P = build_panel(data, e.cfg, tuple(st["strategy"]))
         e.bind(P)
         if not e.equity:
@@ -142,6 +145,11 @@ def cmd_paper(args):
         print("Open the report:", path)
 
 
+def cmd_serve(args):
+    from ichimoku.web import serve
+    serve(args.host, args.port)
+
+
 def _paper_universe(paper):
     """Nifty 200 + anything the paper account still holds (a stock can leave the index while held)."""
     if not os.path.exists(paper.STATE_FILE):
@@ -159,13 +167,16 @@ def main(argv=None):
     sub = ap.add_subparsers(dest="cmd", required=True)
     b = sub.add_parser("backtest"); b.add_argument("--start", help="first trading date (default 2015-01-01)")
     sub.add_parser("scan")
+    w = sub.add_parser("serve", help="local website on http://127.0.0.1:8000")
+    w.add_argument("--port", type=int, default=8000)
+    w.add_argument("--host", default="127.0.0.1", help="0.0.0.0 to open it from your phone on the same Wi-Fi")
     p = sub.add_parser("paper")
     p.add_argument("action", choices=["init", "run", "status", "report"])
     p.add_argument("--start", help="init: first bar to paper trade (default today)")
     p.add_argument("--capital", type=float, help="init: starting capital (default 500000)")
     p.add_argument("--force", action="store_true", help="init: overwrite an existing account")
     args = ap.parse_args(argv)
-    {"backtest": cmd_backtest, "scan": cmd_scan, "paper": cmd_paper}[args.cmd](args)
+    {"backtest": cmd_backtest, "scan": cmd_scan, "paper": cmd_paper, "serve": cmd_serve}[args.cmd](args)
 
 
 if __name__ == "__main__":
