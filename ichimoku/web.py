@@ -24,18 +24,29 @@ PAPER_REPORT = os.path.join(C.PAPER_DIR, "report.html")
 BACKTEST_REPORT = os.path.join(C.RESULTS_DIR, "backtest", "report.html")
 STATE = os.path.join(C.PAPER_DIR, "state.json")
 
+# (command, required): an optional step that fails is logged and the job carries on
+OPT = False
 JOBS = {
-    "sync": ("Sync paper account from GitHub", [["git", "pull", "--ff-only"], [PY, MAIN, "paper", "report"]]),
-    "paper": ("Run paper trade now (local account)", [[PY, MAIN, "paper", "run"], [PY, MAIN, "--offline", "paper", "report"]]),
-    "report": ("Rebuild paper report", [[PY, MAIN, "paper", "report"]]),
-    "scan": ("Scan Nifty 200", [[PY, MAIN, "scan"]]),
-    "backtest": ("Run full backtest", [[PY, MAIN, "backtest"]]),
+    "auto": ("Updating everything", [
+        (["git", "pull", "--ff-only", "--autostash"], OPT),                       # paper trades made by the GitHub Action
+        ([PY, MAIN, "scan"], OPT),                                 # downloads the latest prices + scans
+        ([PY, MAIN, "--offline", "backtest"], OPT),                # backtest up to the latest bar
+        ([PY, MAIN, "paper", "report"], OPT),
+    ]),
+    "sync": ("Sync paper account from GitHub", [(["git", "pull", "--ff-only", "--autostash"], True), ([PY, MAIN, "paper", "report"], True)]),
+    "paper": ("Run paper trade now (local account)", [([PY, MAIN, "paper", "run"], True), ([PY, MAIN, "--offline", "paper", "report"], True)]),
+    "report": ("Rebuild paper report", [([PY, MAIN, "paper", "report"], True)]),
+    "scan": ("Scan Nifty 200", [([PY, MAIN, "scan"], True)]),
+    "backtest": ("Run full backtest", [([PY, MAIN, "backtest"], True)]),
 }
+STEP_NAMES = {"git": "Pulling latest paper trades from GitHub", "scan": "Downloading latest prices and scanning Nifty 200",
+              "backtest": "Running the backtest", "paper": "Building the paper report"}
+AUTO_EVERY_MIN = 60          # while the site is open, refresh everything this often
 
 
 class Job:
     lock = threading.Lock()
-    name, log, running, ok, started, next_url = None, "", False, None, None, "/"
+    name, log, running, ok, started, finished, next_url, step = None, "", False, None, None, None, "/", ""
 
     @classmethod
     def start(cls, key, next_url="/"):
@@ -49,17 +60,25 @@ class Job:
     @classmethod
     def _run(cls, cmds):
         ok = True
-        for cmd in cmds:
+        for n, (cmd, required) in enumerate(cmds, 1):
+            word = "git" if cmd[0] == "git" else next((w for w in ("backtest", "scan", "paper") if w in cmd), "")
+            cls.step = f"Step {n} of {len(cmds)}: {STEP_NAMES.get(word, ' '.join(cmd[2:]))}…"
             cls.log += "$ " + " ".join(os.path.basename(c) if c in (PY, MAIN) else c for c in cmd) + "\n"
-            p = subprocess.Popen(cmd, cwd=C.ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
-                                 env={**os.environ, "PYTHONUNBUFFERED": "1"})
-            for line in p.stdout:
-                cls.log += line
-            if p.wait() != 0:
-                cls.log += f"\n[exit code {p.returncode}]\n"
-                ok = False
-                break
-        cls.ok, cls.running = ok, False
+            try:
+                p = subprocess.Popen(cmd, cwd=C.ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+                                     env={**os.environ, "PYTHONUNBUFFERED": "1"})
+                for line in p.stdout:
+                    cls.log += line
+                code = p.wait()
+            except OSError as e:
+                cls.log += f"{e}\n"
+                code = -1
+            if code != 0:
+                cls.log += f"\n[exit code {code}]" + ("" if required else " - skipped, continuing") + "\n"
+                if required:
+                    ok = False
+                    break
+        cls.ok, cls.running, cls.finished, cls.step = ok, False, time.time(), ""
 
 
 # ---------------------------------------------------------------------- data
@@ -82,10 +101,17 @@ def _read_csv(p):
 
 
 def latest_scan():
-    cands = [os.path.join(C.PAPER_DIR, "scan_latest.csv"), os.path.join(C.RESULTS_DIR, "scan_latest.csv"),
-             os.path.join(C.RESULTS_DIR, "backtest", "scan_latest.csv")]
-    p = max(cands, key=_mtime)
-    return _read_csv(p), _mtime(p)
+    """The scan with the most recent market date (file times are unreliable after a git pull)."""
+    best = (pd.DataFrame(), 0, "")
+    for p in (os.path.join(C.PAPER_DIR, "scan_latest.csv"), os.path.join(C.RESULTS_DIR, "scan_latest.csv"),
+              os.path.join(C.RESULTS_DIR, "backtest", "scan_latest.csv")):
+        df = _read_csv(p)
+        if df.empty or "date" not in df:
+            continue
+        key = (str(df["date"].max()), _mtime(p))
+        if key > (best[2], best[1]):
+            best = (df, _mtime(p), key[0])
+    return best[0], best[1]
 
 
 def paper_summary():
@@ -126,7 +152,8 @@ table{border-collapse:collapse;width:100%;font-size:12.5px;font-variant-numeric:
 th,td{padding:6px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--grid)}th{position:sticky;top:0;background:var(--surface);color:var(--ink2)}
 th:first-child,td:first-child{text-align:left}
 pre{background:var(--surface);border:1px solid var(--ring);border-radius:12px;padding:12px;overflow:auto;max-height:65vh;font-size:12px}
-.note{color:var(--muted);font-size:12.5px}.empty{color:var(--muted);padding:14px}
+.note{color:var(--muted);font-size:12.5px}
+.banner{background:color-mix(in srgb,var(--accent) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--accent) 35%,transparent);border-radius:12px;padding:10px 14px;margin-bottom:14px}.empty{color:var(--muted);padding:14px}
 iframe{border:0;width:100%;height:calc(100vh - 52px);display:block}
 """
 
@@ -168,9 +195,23 @@ pc = lambda v: "" if pd.isna(v) else f'<span class="{"pos" if v > 0 else "neg" i
 buy = lambda v: "<b class='pos'>BUY</b>" if str(v) == "True" or v is True else ""
 
 
+def status_banner():
+    if Job.running:
+        mins = int((time.time() - Job.started) // 60)
+        first = "" if os.path.exists(C.CACHE_FILE) else " The first run downloads 12 years of prices for 200 stocks (5–10 min)."
+        return ('<meta http-equiv="refresh" content="4"><div class="banner">⟳ <b>Updating to the latest data</b> — '
+                f'{html.escape(Job.step)} ({mins} min so far).{first} This page reloads by itself. '
+                '<a href="/job">Show log</a></div>')
+    if Job.finished:
+        warn = " Some steps had problems — <a href='/job'>see log</a>." if "[exit code" in Job.log else ""
+        nxt = time.strftime("%H:%M", time.localtime(Job.finished + AUTO_EVERY_MIN * 60))
+        return f'<p class="note">✓ Updated {_ago(Job.finished)}; next automatic update at {nxt}.{warn}</p>'
+    return ""
+
+
 def dashboard():
     s = paper_summary()
-    parts = []
+    parts = [status_banner()]
     if s:
         tiles = [
             ("Paper equity", rs(s["equity"]), f"started {rs(s['capital'])} on {s['start']}"),
@@ -186,10 +227,6 @@ def dashboard():
     else:
         parts.append('<div class="card">No paper account yet. Click <b>Sync from GitHub</b> if the daily GitHub Action is running, or run <code>python main.py paper init</code>.</div>')
 
-    parts.append("<h2>Update</h2><div class='btns'>" + job_button("sync", "⟳ Sync from GitHub", primary=True) +
-                 job_button("scan") + job_button("report") + job_button("backtest") + "</div>")
-    parts.append('<p class="note">The paper account is traded by the GitHub Action every weekday at 16:17 IST; <b>Sync</b> pulls it here. '
-                 'Use <i>Run paper trade now</i> (Activity page) only if you trade the account locally instead of on GitHub.</p>')
 
     pos = _read_csv(os.path.join(C.PAPER_DIR, "positions.csv"))
     parts.append("<h2>Open positions</h2>" + df_table(pos, [
@@ -234,12 +271,14 @@ def job_page():
     body = (f"{refresh}<h2>{html.escape(title)} <span class='note'>{status}</span></h2>"
             f"<pre id='log'>{html.escape(Job.log[-60000:]) or 'Nothing has run yet.'}</pre>"
             "<script>const l=document.getElementById('log');l.scrollTop=l.scrollHeight</script>" + go +
-            "<h2>Run</h2><div class='btns'>" + "".join(job_button(k) for k in JOBS) + "</div>"
+            "<h2>Run</h2><div class='btns'>" + job_button("auto", "⟳ Update everything now", primary=True) + "".join(job_button(k) for k in JOBS if k != "auto") + "</div>"
             "<p class='note'>First backtest downloads ~12 years of prices (5–10 min); after that it uses the cache in data/.</p>")
     return page("Activity", body, "/job")
 
 
 def report_page(path, title, active, job_key, missing_msg):
+    if Job.running and not os.path.exists(path):
+        return page(title, "<main>" + status_banner() + "</main>", active, full=True)
     body = (f"<iframe src='{active}/report.html'></iframe>" if os.path.exists(path) else
             f"<main><h2>{title}</h2><div class='card'>{missing_msg}</div><br>{job_button(job_key, primary=True, next_url=active)}</main>")
     return page(title, body, active, full=True)
@@ -315,6 +354,11 @@ def serve(host="127.0.0.1", port=8000):
         srv = ThreadingHTTPServer((host, port), Handler)
     except OSError:
         raise SystemExit(f"Port {port} is busy (already running?). Open http://127.0.0.1:{port} or use --port 8001.")
+    def auto_loop():
+        while True:
+            Job.start("auto")
+            time.sleep(AUTO_EVERY_MIN * 60)
+    threading.Thread(target=auto_loop, daemon=True).start()
     url = f"http://{'127.0.0.1' if host in ('0.0.0.0', '') else host}:{port}"
     print(f"Ichimoku dashboard running at {url}  (Ctrl+C to stop)")
     if host not in ("127.0.0.1", "localhost"):

@@ -47,6 +47,7 @@ jobs:
         run: python main.py paper run
 
       - name: Paper report
+        continue-on-error: true      # a report problem must never block saving the trades
         run: python main.py --offline paper report
 
       - name: Backtest
@@ -54,8 +55,10 @@ jobs:
         run: python main.py --offline backtest
 
       - uses: actions/upload-artifact@v4
+        continue-on-error: true      # e.g. artifact storage quota full on a private repo
         with:
           name: reports-${{ github.run_number }}
+          retention-days: 14         # keeps storage well under the private-repo free quota
           path: |
             paper/report.html
             results/backtest/
