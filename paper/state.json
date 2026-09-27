@@ -1,0 +1,38 @@
+{
+ "cash": 500000.0,
+ "last_date": null,
+ "positions": {},
+ "trades": [],
+ "ledger": [],
+ "equity": {},
+ "n_open": {},
+ "config": {
+  "cfg": {
+   "tenkan": 9,
+   "kijun": 26,
+   "senkou_b": 52,
+   "displacement": 26,
+   "capital": 500000,
+   "max_positions": 10,
+   "alloc_pct": 10,
+   "sl_pct": 12,
+   "tp_pct": 24,
+   "book_fraction": 0.5,
+   "commission_pct": 0.1,
+   "slippage_ticks": 0,
+   "tick_size": 0.05
+  },
+  "trail": {
+   "kind": "pct",
+   "value": 30,
+   "be": true
+  },
+  "entry_at": "close",
+  "rank_by": "roc"
+ },
+ "start_date": "2026-09-27",
+ "strategy": [
+  "price_kijun",
+  "strong"
+ ]
+}
