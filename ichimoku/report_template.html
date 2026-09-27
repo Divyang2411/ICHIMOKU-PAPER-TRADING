@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITLE__</title>
+<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink2: #52514e; --muted: #898781;
+  --grid: #e1e0d9; --axis: #c3c2b7; --ring: rgba(11,11,11,0.10);
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s5: #e87ba4; --s7: #4a3aa7; --neg: #e34948;
+  --up: #1baf7a; --down: #e34948; --good-text: #006300; --bad-text: #b3261e;
+  --cloud-up: rgba(27,175,122,0.16); --cloud-dn: rgba(227,73,72,0.14); --mid: #f0efec;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --ring: rgba(255,255,255,0.10);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s5: #d55181; --s7: #9085e9; --neg: #e66767;
+    --up: #199e70; --down: #e66767; --good-text: #0ca30c; --bad-text: #e66767;
+    --cloud-up: rgba(25,158,112,0.20); --cloud-dn: rgba(230,103,103,0.16); --mid: #383835;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink2: #c3c2b7; --muted: #898781;
+  --grid: #2c2c2a; --axis: #383835; --ring: rgba(255,255,255,0.10);
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s5: #d55181; --s7: #9085e9; --neg: #e66767;
+  --up: #199e70; --down: #e66767; --good-text: #0ca30c; --bad-text: #e66767;
+  --cloud-up: rgba(25,158,112,0.20); --cloud-dn: rgba(230,103,103,0.16); --mid: #383835;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 1240px; margin: 0 auto; padding: 24px 16px 64px; }
+h1 { font-size: 24px; margin: 0 0 4px; font-weight: 650; }
+h2 { font-size: 17px; margin: 36px 0 12px; font-weight: 620; }
+.sub { color: var(--ink2); margin: 0 0 16px; }
+.banner { background: #fff4d6; color: #5c4200; border: 1px solid #f0d58a; padding: 10px 14px; border-radius: 8px; margin: 12px 0 18px; }
+:root[data-theme="dark"] .banner { background: #3a2f10; color: #f5dc9a; border-color: #5c4a1a; }
+@media (prefers-color-scheme: dark) { :root:where(:not([data-theme="light"])) .banner { background: #3a2f10; color: #f5dc9a; border-color: #5c4a1a; } }
+.card { background: var(--surface); border: 1px solid var(--ring); border-radius: 12px; padding: 16px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 10px; }
+.tile { background: var(--surface); border: 1px solid var(--ring); border-radius: 12px; padding: 12px 14px; }
+.tile .k { color: var(--ink2); font-size: 12px; }
+.tile .v { font-size: 22px; font-weight: 620; margin-top: 2px; }
+.tile .d { color: var(--muted); font-size: 12px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; }
+.chip { font-size: 12px; color: var(--ink2); border: 1px solid var(--ring); border-radius: 999px; padding: 3px 10px; background: var(--surface); }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 860px) { .grid2 { grid-template-columns: 1fr; } }
+.chart { width: 100%; height: 360px; }
+.chart.tall { height: 520px; }
+.chart.short { height: 220px; }
+.tablewrap { overflow-x: auto; max-height: 520px; overflow-y: auto; border: 1px solid var(--ring); border-radius: 12px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+th, td { padding: 6px 10px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--grid); }
+th { position: sticky; top: 0; background: var(--surface); color: var(--ink2); font-weight: 600; cursor: pointer; user-select: none; z-index: 1; }
+th:first-child, td:first-child, td.l, th.l { text-align: left; }
+tbody tr:hover { background: color-mix(in srgb, var(--s1) 8%, transparent); }
+tr.sel { background: color-mix(in srgb, var(--s1) 16%, transparent) !important; }
+tbody tr.click { cursor: pointer; }
+.pos { color: var(--good-text); } .neg { color: var(--bad-text); }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+input, select, button { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--axis); border-radius: 8px; padding: 6px 10px; }
+button { cursor: pointer; }
+button.on { background: var(--s1); color: #fff; border-color: var(--s1); }
+.tag { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--ring); }
+.tag.SL { color: var(--bad-text); } .tag.TRAIL, .tag.TARGET_FULL { color: var(--good-text); } .tag.OPEN { color: var(--s1); }
+.tradehead { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 6px; color: var(--ink2); font-size: 13px; }
+.tradehead b { color: var(--ink); }
+.note { color: var(--muted); font-size: 12px; margin-top: 6px; }
+.empty { color: var(--muted); padding: 14px; }
+</style>
+</head>
+<body>
+<main>
+  <h1 id="title"></h1>
+  <p class="sub" id="subtitle"></p>
+  <div id="banner"></div>
+  <div class="chips" id="chips"></div>
+
+  <h2>Summary</h2>
+  <div class="tiles" id="tiles"></div>
+
+  <section id="paperSection" hidden>
+    <h2>Open positions (paper portfolio)</h2>
+    <div class="tablewrap" id="positions"></div>
+    <h2>Latest executions</h2>
+    <div class="tablewrap" id="recent"></div>
+  </section>
+
+  <h2>Equity curve</h2>
+  <div class="card">
+    <div class="controls"><button id="logBtn" class="on">Log scale</button><button id="linBtn">Linear</button></div>
+    <div id="eqChart" class="chart"></div>
+    <div id="ddChart" class="chart short"></div>
+    <div id="posChart" class="chart short"></div>
+  </div>
+
+  <div class="grid2">
+    <div><h2>Return by year</h2><div class="card"><div id="yearChart" class="chart"></div></div></div>
+    <div><h2>Monthly returns (%)</h2><div class="card"><div id="monthChart" class="chart"></div></div></div>
+  </div>
+
+  <h2>Year-by-year table</h2>
+  <div class="tablewrap" id="yearTable"></div>
+
+  <div class="grid2">
+    <div><h2>Exit reasons</h2><div class="tablewrap" id="reasonTable"></div></div>
+    <div><h2>Trade return distribution</h2><div class="card"><div id="histChart" class="chart short" style="height:260px"></div></div></div>
+  </div>
+
+  <h2>Trade chart</h2>
+  <div class="card">
+    <div class="controls">
+      <select id="tradeSel" style="max-width:100%"></select>
+      <button id="prevBtn">&larr; Prev</button><button id="nextBtn">Next &rarr;</button>
+    </div>
+    <div class="tradehead" id="tradeHead"></div>
+    <div id="tradeChart" class="chart tall"></div>
+    <p class="note">Candles with Tenkan, Kijun and the Kumo cloud. Markers: entry (▲), T1 partial booking at target (◆), final exit (▼). Dashed lines: initial stop-loss and T1 target.</p>
+  </div>
+
+  <h2>All trades</h2>
+  <div class="controls">
+    <input id="tradeFilter" placeholder="Filter by symbol…" size="18">
+    <select id="reasonFilter"><option value="">All exit reasons</option></select>
+    <span class="note" id="tradeCount"></span>
+  </div>
+  <div class="tablewrap" id="tradeTable"></div>
+
+  <section id="scanSection" hidden>
+    <h2 id="scanTitle">Nifty 200 scan</h2>
+    <p class="note">Signal = close crossed above Kijun while above the cloud (the strategy's buy trigger), ranked by 26-day ROC as the engine does. Score 0-5 = above cloud, Tenkan &gt; Kijun, close &gt; Kijun, future cloud bullish, Chikou above price 26 bars back.</p>
+    <div class="tablewrap" id="scanTable"></div>
+  </section>
+</main>
+
+<script>
+const D = /*__DATA__*/null;
+const $ = (id) => document.getElementById(id);
+const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const inr = (v, d = 0) => v == null ? "–" : "₹" + Number(v).toLocaleString("en-IN", { maximumFractionDigits: d, minimumFractionDigits: d });
+const num = (v, d = 2) => v == null ? "–" : Number(v).toLocaleString("en-IN", { maximumFractionDigits: d, minimumFractionDigits: d });
+const pct = (v, d = 2) => v == null ? "–" : (v > 0 ? "+" : "") + Number(v).toFixed(d) + "%";
+const hexA = (h, a) => { const n = parseInt(h.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
+const cls = (v) => v == null ? "" : v > 0 ? "pos" : v < 0 ? "neg" : "";
+
+$("title").textContent = D.title;
+$("subtitle").textContent = D.subtitle;
+if (D.demo) $("banner").innerHTML = '<div class="banner"><b>Demo data.</b> These numbers come from randomly generated prices so the report can be previewed offline. They say nothing about the strategy. Run <code>python main.py backtest</code> with internet access for real Nifty 200 results.</div>';
+const cf = D.config;
+$("chips").innerHTML = [
+  `Strategy: ${cf.strategy}`, `Capital ${inr(cf.capital)}`, `${cf.max_positions} positions × ${cf.alloc_pct}% of equity`,
+  `SL ${cf.sl_pct}%`, `T1 +${cf.tp_pct}% (book ${cf.book_pct}%)`, `Trail ${cf.trail}`, `Commission ${cf.commission_pct}%/side`,
+  D.extra.start ? `${D.extra.start} → ${D.extra.end}` : ""
+].filter(Boolean).map(s => `<span class="chip">${s}</span>`).join("");
+
+// ---------------------------------------------------------------- tiles
+const M = D.metrics, X = D.extra;
+const tiles = [
+  ["Final equity", inr(M.final_equity), `from ${inr(cf.capital)}`],
+  ["Total return", pct(M.total_return_pct, 1), `Net P&L ${inr(M.final_equity - cf.capital)}`],
+  ["CAGR", pct(M.CAGR_pct), ""],
+  ["Max drawdown", pct(M.max_DD_pct), `Calmar ${num(M.Calmar)}`],
+  ["Sharpe (daily)", num(M.Sharpe), ""],
+  ["Trades", num(M.trades, 0), `avg hold ${num(M.avg_days, 0)} bars`],
+  ["Win rate", M.win_rate_pct == null ? "–" : num(M.win_rate_pct, 1) + "%", `T1 hit ${M.target_hit_pct == null ? "–" : num(M.target_hit_pct, 1) + "%"}`],
+  ["Profit factor", num(M.profit_factor), `expectancy ${pct(M.expectancy_pct)}/trade`],
+  ["Avg win / loss", `${pct(M.avg_win_pct, 1)} / ${pct(M.avg_loss_pct, 1)}`, ""],
+  ["Realized / open P&L", inr(X.realized_pnl), `open ${inr(X.unrealized_pnl)}`],
+  ["Peak equity", inr(X.peak_equity), `commission paid ${inr(X.commission)}`],
+];
+$("tiles").innerHTML = tiles.map(([k, v, d]) => `<div class="tile"><div class="k">${k}</div><div class="v">${v}</div><div class="d">${d}</div></div>`).join("");
+
+// ---------------------------------------------------------------- tables
+function table(el, rows, cols, opts = {}) {
+  if (!rows.length) { el.innerHTML = `<div class="empty">${opts.empty || "Nothing to show."}</div>`; return; }
+  let sortKey = opts.sortKey, asc = opts.asc ?? false;
+  const draw = () => {
+    const r = [...rows];
+    if (sortKey) r.sort((a, b) => { const x = a[sortKey], y = b[sortKey]; if (x == null) return 1; if (y == null) return -1; return (x < y ? -1 : x > y ? 1 : 0) * (asc ? 1 : -1); });
+    el.innerHTML = `<table><thead><tr>${cols.map(c => `<th data-k="${c.k}" class="${c.l ? "l" : ""}">${c.t}${sortKey === c.k ? (asc ? " ▲" : " ▼") : ""}</th>`).join("")}</tr></thead><tbody>` +
+      r.map(row => `<tr class="${opts.onClick ? "click" : ""}" data-id="${row._id ?? ""}">${cols.map(c => { const v = row[c.k]; const f = c.f ? c.f(v, row) : (v ?? "–"); return `<td class="${c.l ? "l " : ""}${c.c ? cls(v) : ""}">${f}</td>`; }).join("")}</tr>`).join("") + "</tbody></table>";
+    el.querySelectorAll("th").forEach(th => th.onclick = () => { const k = th.dataset.k; if (sortKey === k) asc = !asc; else { sortKey = k; asc = true; } draw(); });
+    if (opts.onClick) el.querySelectorAll("tbody tr").forEach(tr => tr.onclick = () => opts.onClick(+tr.dataset.id));
+    if (opts.selected != null) { const s = el.querySelector(`tr[data-id="${opts.selected}"]`); if (s) s.classList.add("sel"); }
+  };
+  draw();
+  return { redraw: (sel) => { opts.selected = sel; draw(); } };
+}
+const reasonTag = (v) => `<span class="tag ${v}">${v}</span>`;
+
+table($("yearTable"), D.yearly, [
+  { k: "year", t: "Year", l: 1 }, { k: "start", t: "Start equity", f: v => inr(v) }, { k: "end", t: "End equity", f: v => inr(v) },
+  { k: "pnl", t: "P&L", f: v => inr(v), c: 1 }, { k: "ret_pct", t: "Return", f: v => pct(v), c: 1 },
+  { k: "max_dd_pct", t: "Max DD", f: v => pct(v) }, { k: "trades_closed", t: "Trades closed" }, { k: "win_rate_pct", t: "Win rate", f: v => v == null ? "–" : num(v, 1) + "%" },
+], { sortKey: "year", asc: true });
+
+table($("reasonTable"), D.by_reason, [
+  { k: "reason", t: "Exit", l: 1, f: reasonTag }, { k: "trades", t: "Trades" }, { k: "net_pnl", t: "Net P&L", f: v => inr(v), c: 1 },
+  { k: "avg_ret_pct", t: "Avg return", f: v => pct(v), c: 1 }, { k: "win_rate_pct", t: "Win rate", f: v => num(v, 1) + "%" }, { k: "avg_days", t: "Avg bars", f: v => num(v, 0) },
+], { empty: "No closed trades yet." });
+
+if (D.positions.length || D.recent.length || D.title.toLowerCase().includes("paper")) {
+  $("paperSection").hidden = false;
+  table($("positions"), D.positions, [
+    { k: "symbol", t: "Symbol", l: 1 }, { k: "entry_date", t: "Entry date", l: 1 }, { k: "entry_px", t: "Entry", f: v => num(v) },
+    { k: "qty_open", t: "Qty" }, { k: "last_close", t: "Last close", f: v => num(v) }, { k: "ret_pct", t: "Return", f: v => pct(v), c: 1 },
+    { k: "unrealized_pnl", t: "P&L", f: v => inr(v), c: 1 }, { k: "stop_loss", t: "Stop now", f: v => num(v) },
+    { k: "target_t1", t: "T1 target", f: v => num(v) }, { k: "stage", t: "Stage", l: 1 }, { k: "days_held", t: "Bars held" },
+  ], { empty: "No open positions." });
+  table($("recent"), D.recent, [
+    { k: "date", t: "Date", l: 1 }, { k: "action", t: "Action", l: 1 }, { k: "symbol", t: "Symbol", l: 1 },
+    { k: "qty", t: "Qty" }, { k: "fill_px", t: "Price", f: v => num(v) }, { k: "rule", t: "Fill rule", l: 1 },
+  ], { empty: "No executions yet." });
+}
+
+if (D.scan.length) {
+  $("scanSection").hidden = false;
+  $("scanTitle").textContent = `Nifty 200 scan — ${D.scan_date} (top ${D.scan.length})`;
+  table($("scanTable"), D.scan, [
+    { k: "symbol", t: "Symbol", l: 1 }, { k: "signal", t: "Buy signal", f: v => v ? "<b class='pos'>BUY</b>" : "" },
+    { k: "score", t: "Score" }, { k: "vs_cloud", t: "vs cloud", l: 1 }, { k: "close", t: "Close", f: v => num(v) },
+    { k: "kijun", t: "Kijun", f: v => num(v) }, { k: "dist_kijun_pct", t: "vs Kijun", f: v => pct(v), c: 1 },
+    { k: "roc26_pct", t: "ROC 26", f: v => pct(v), c: 1 }, { k: "near_cross", t: "Near cross", f: v => v ? "yes" : "" },
+    { k: "stop_loss", t: "SL if bought", f: v => num(v) }, { k: "target_t1", t: "T1 if bought", f: v => num(v) },
+  ]);
+}
+
+// ---------------------------------------------------------------- charts
+const cfgPlot = { displaylogo: false, responsive: true, modeBarButtonsToRemove: ["lasso2d", "select2d", "autoScale2d"] };
+function baseLayout(extra = {}) {
+  return Object.assign({
+    paper_bgcolor: css("--surface"), plot_bgcolor: css("--surface"),
+    font: { family: "system-ui, -apple-system, Segoe UI, sans-serif", color: css("--ink2"), size: 12 },
+    margin: { l: 60, r: 16, t: 10, b: 36 }, hovermode: "x unified",
+    hoverlabel: { bgcolor: css("--surface"), bordercolor: css("--axis"), font: { color: css("--ink") } },
+    xaxis: { gridcolor: css("--grid"), linecolor: css("--axis"), zeroline: false, showspikes: true, spikecolor: css("--muted"), spikethickness: 1, spikemode: "across" },
+    yaxis: { gridcolor: css("--grid"), linecolor: css("--axis"), zerolinecolor: css("--axis") },
+    showlegend: false,
+  }, extra);
+}
+let eqLog = true;
+function drawEquity() {
+  const E = D.equity;
+  const tr = [{ x: E.x, y: E.y, type: "scatter", mode: "lines", name: "Strategy equity", line: { color: css("--s1"), width: 2 }, hovertemplate: "₹%{y:,.0f}<extra>Strategy</extra>" }];
+  if (D.benchmark) tr.push({ x: E.x, y: D.benchmark.y, type: "scatter", mode: "lines", name: D.benchmark.name, line: { color: css("--s2"), width: 1.5 }, hovertemplate: "₹%{y:,.0f}<extra>" + D.benchmark.name + "</extra>" });
+  tr.push({ x: [E.x[0], E.x[E.x.length - 1]], y: [cf.capital, cf.capital], mode: "lines", line: { color: css("--muted"), width: 1, dash: "dot" }, hoverinfo: "skip", name: "Start capital" });
+  Plotly.react("eqChart", tr, baseLayout({
+    yaxis: { type: eqLog ? "log" : "linear", gridcolor: css("--grid"), tickprefix: "₹", tickformat: ",.3s" },
+    showlegend: !!D.benchmark, legend: { orientation: "h", x: 0, y: 1.08 },
+  }), cfgPlot);
+  Plotly.react("ddChart", [{ x: E.x, y: E.dd, type: "scatter", mode: "lines", fill: "tozeroy", line: { color: css("--neg"), width: 1.5 }, fillcolor: hexA(css("--neg"), 0.25), hovertemplate: "%{y:.2f}%<extra>Drawdown</extra>" }],
+    baseLayout({ yaxis: { ticksuffix: "%", gridcolor: css("--grid"), title: { text: "Drawdown", font: { size: 11 } } } }), cfgPlot);
+  Plotly.react("posChart", [{ x: E.x, y: E.pos, type: "scatter", mode: "lines", line: { color: css("--s7"), width: 1.5, shape: "hv" }, hovertemplate: "%{y}<extra>Open positions</extra>" }],
+    baseLayout({ yaxis: { gridcolor: css("--grid"), range: [0, cf.max_positions + 0.5], title: { text: "Positions", font: { size: 11 } } } }), cfgPlot);
+}
+$("logBtn").onclick = () => { eqLog = true; $("logBtn").classList.add("on"); $("linBtn").classList.remove("on"); drawEquity(); };
+$("linBtn").onclick = () => { eqLog = false; $("linBtn").classList.add("on"); $("logBtn").classList.remove("on"); drawEquity(); };
+
+function drawYear() {
+  const y = D.yearly;
+  Plotly.react("yearChart", [{
+    x: y.map(r => String(r.year)), y: y.map(r => r.ret_pct), type: "bar",
+    marker: { color: y.map(r => r.ret_pct >= 0 ? css("--s1") : css("--neg")) },
+    text: y.map(r => (r.ret_pct >= 0 ? "+" : "") + r.ret_pct.toFixed(0) + "%"), textposition: "outside", cliponaxis: false,
+    textfont: { color: css("--ink2"), size: 11 },
+    hovertemplate: "%{x}: %{y:.2f}%<extra></extra>",
+  }], baseLayout({ hovermode: "closest", bargap: 0.35, yaxis: { ticksuffix: "%", gridcolor: css("--grid"), zerolinecolor: css("--axis") }, xaxis: { type: "category", linecolor: css("--axis") } }), cfgPlot);
+}
+function drawMonth() {
+  if (!D.monthly) return;
+  const mo = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const flat = D.monthly.z.flat().filter(v => v != null).map(Math.abs);
+  const lim = Math.max(5, flat.sort((a, b) => a - b)[Math.floor(flat.length * 0.95)] || 5);
+  Plotly.react("monthChart", [{
+    z: D.monthly.z, x: mo, y: D.monthly.years.map(String), type: "heatmap", zmin: -lim, zmax: lim, xgap: 2, ygap: 2,
+    colorscale: [[0, css("--neg")], [0.5, css("--mid")], [1, css("--s1")]],
+    text: D.monthly.z.map(r => r.map(v => v == null ? "" : v.toFixed(1))), texttemplate: "%{text}", textfont: { size: 10, color: css("--ink") },
+    hovertemplate: "%{y} %{x}: %{z:.2f}%<extra></extra>", colorbar: { ticksuffix: "%", thickness: 10, outlinewidth: 0 },
+  }], baseLayout({ hovermode: "closest", yaxis: { autorange: "reversed", type: "category" }, xaxis: { side: "top" }, margin: { l: 50, r: 10, t: 30, b: 10 } }), cfgPlot);
+}
+function drawHist() {
+  const r = D.trades.filter(t => t.reason !== "OPEN").map(t => t.ret_pct);
+  if (!r.length) { $("histChart").innerHTML = '<div class="empty">No closed trades yet.</div>'; return; }
+  Plotly.react("histChart", [
+    { x: r.filter(v => v <= 0), type: "histogram", name: "Losing", marker: { color: css("--neg"), line: { color: css("--surface"), width: 1 } }, xbins: { size: 10 }, hovertemplate: "%{x}: %{y} trades<extra>Losing</extra>" },
+    { x: r.filter(v => v > 0), type: "histogram", name: "Winning", marker: { color: css("--s1"), line: { color: css("--surface"), width: 1 } }, xbins: { size: 10 }, hovertemplate: "%{x}: %{y} trades<extra>Winning</extra>" },
+  ], baseLayout({ hovermode: "closest", barmode: "overlay", showlegend: true, legend: { orientation: "h", x: 0, y: 1.12 }, xaxis: { ticksuffix: "%", gridcolor: css("--grid"), title: { text: "Trade return", font: { size: 11 } } }, yaxis: { gridcolor: css("--grid"), title: { text: "Trades", font: { size: 11 } } } }), cfgPlot);
+}
+
+// ---------------------------------------------------------------- trades
+const trades = D.trades.map((t, i) => Object.assign({ _id: i }, t));
+const order = [...trades].sort((a, b) => a.entry_date < b.entry_date ? -1 : 1).map(t => t._id);
+let current = order.length ? order[order.length - 1] : null;
+const sel = $("tradeSel");
+sel.innerHTML = order.map(i => { const t = trades[i]; return `<option value="${i}">${t.entry_date} ${t.symbol} — ${t.reason} ${pct(t.ret_pct, 1)}</option>`; }).join("");
+[...new Set(trades.map(t => t.reason))].forEach(r => $("reasonFilter").insertAdjacentHTML("beforeend", `<option>${r}</option>`));
+
+const tradeCols = [
+  { k: "symbol", t: "Symbol", l: 1 }, { k: "entry_date", t: "Entry", l: 1 }, { k: "entry_px", t: "Entry ₹", f: v => num(v) },
+  { k: "qty", t: "Qty" }, { k: "invested", t: "Invested", f: v => inr(v) },
+  { k: "sl_px", t: "SL", f: v => num(v) }, { k: "tp_px", t: "Target", f: v => num(v) },
+  { k: "t1_date", t: "T1 date", l: 1, f: v => v || "" }, { k: "t1_px", t: "T1 ₹", f: v => v == null ? "" : num(v) },
+  { k: "exit_date", t: "Exit", l: 1 }, { k: "exit_px", t: "Exit ₹", f: v => num(v) }, { k: "reason", t: "Reason", l: 1, f: reasonTag },
+  { k: "pnl", t: "P&L", f: v => inr(v), c: 1 }, { k: "ret_pct", t: "Return", f: v => pct(v, 1), c: 1 },
+  { k: "peak_gain_pct", t: "Peak gain", f: v => pct(v, 1) }, { k: "days", t: "Bars" },
+];
+let tt;
+function drawTradeTable() {
+  const q = $("tradeFilter").value.trim().toUpperCase(), rf = $("reasonFilter").value;
+  const rows = trades.filter(t => (!q || t.symbol.includes(q)) && (!rf || t.reason === rf));
+  $("tradeCount").textContent = `${rows.length} of ${trades.length} trades · click a row to chart it`;
+  tt = table($("tradeTable"), rows, tradeCols, { sortKey: "entry_date", asc: false, onClick: showTrade, selected: current });
+}
+$("tradeFilter").oninput = drawTradeTable; $("reasonFilter").onchange = drawTradeTable;
+sel.onchange = () => showTrade(+sel.value);
+$("prevBtn").onclick = () => { const k = order.indexOf(current); if (k > 0) showTrade(order[k - 1]); };
+$("nextBtn").onclick = () => { const k = order.indexOf(current); if (k < order.length - 1) showTrade(order[k + 1]); };
+
+function showTrade(id, scroll = true) {
+  if (id == null) { $("tradeChart").innerHTML = '<div class="empty">No trades yet.</div>'; return; }
+  current = id; sel.value = id; if (tt) tt.redraw(id);
+  const t = trades[id], w = D.windows[id];
+  $("tradeHead").innerHTML = `<span><b>${t.symbol}</b></span><span>Entry <b>${t.entry_date} @ ${num(t.entry_px)}</b> × ${t.qty}</span>` +
+    `<span>SL <b>${num(t.sl_px)}</b></span><span>Target <b>${num(t.tp_px)}</b></span>` +
+    (t.t1_date ? `<span>T1 <b>${t.t1_date} @ ${num(t.t1_px)}</b> × ${t.t1_qty}</span>` : "") +
+    `<span>Exit <b>${t.exit_date} @ ${num(t.exit_px)}</b> ${reasonTag(t.reason)}</span><span>P&L <b class="${cls(t.pnl)}">${inr(t.pnl)} (${pct(t.ret_pct, 1)})</b></span>`;
+  if (!w) { $("tradeChart").innerHTML = '<div class="empty">No price data for this trade.</div>'; return; }
+  const top = w.sa.map((a, i) => a == null || w.sb[i] == null ? null : Math.max(a, w.sb[i]));
+  const bot = w.sa.map((a, i) => a == null || w.sb[i] == null ? null : Math.min(a, w.sb[i]));
+  const bull = w.sa.map((a, i) => a != null && w.sb[i] != null && a >= w.sb[i]);
+  // Cloud: fill between span A and B, green where A >= B, red otherwise (split into two filled bands)
+  const bandUp = w.sa.map((a, i) => bull[i] ? top[i] : bot[i]);
+  const traces = [
+    { x: w.x, y: bot, mode: "lines", line: { width: 0 }, hoverinfo: "skip", showlegend: false },
+    { x: w.x, y: bandUp, mode: "lines", line: { width: 0 }, fill: "tonexty", fillcolor: css("--cloud-up"), hoverinfo: "skip", showlegend: false },
+    { x: w.x, y: top, mode: "lines", line: { width: 0 }, fill: "tonexty", fillcolor: css("--cloud-dn"), hoverinfo: "skip", showlegend: false },
+    { x: w.x, y: w.sa, mode: "lines", name: "Senkou A", line: { color: css("--s3"), width: 1 }, hovertemplate: "%{y:.2f}" },
+    { x: w.x, y: w.sb, mode: "lines", name: "Senkou B", line: { color: css("--neg"), width: 1 }, hovertemplate: "%{y:.2f}" },
+    { x: w.x, open: w.o, high: w.h, low: w.l, close: w.c, type: "candlestick", name: "Price",
+      increasing: { line: { color: css("--up"), width: 1 }, fillcolor: css("--up") }, decreasing: { line: { color: css("--down"), width: 1 }, fillcolor: css("--down") } },
+    { x: w.x, y: w.tk, mode: "lines", name: "Tenkan", line: { color: css("--s5"), width: 1.5 }, hovertemplate: "%{y:.2f}" },
+    { x: w.x, y: w.kj, mode: "lines", name: "Kijun", line: { color: css("--s1"), width: 2 }, hovertemplate: "%{y:.2f}" },
+  ];
+  const lastX = t.reason === "OPEN" ? w.x[w.x.length - 1] : t.exit_date;
+  const shapes = [
+    { type: "line", x0: t.entry_date, x1: t.t1_date || lastX, y0: t.sl_px, y1: t.sl_px, line: { color: css("--neg"), width: 1.5, dash: "dash" } },
+    { type: "line", x0: t.entry_date, x1: t.t1_date || lastX, y0: t.tp_px, y1: t.tp_px, line: { color: css("--s3"), width: 1.5, dash: "dash" } },
+    { type: "rect", x0: t.entry_date, x1: lastX, yref: "paper", y0: 0, y1: 1, fillcolor: css("--s1"), opacity: 0.05, line: { width: 0 } },
+  ];
+  const mk = (x, y, sym, color, name, text) => ({ x: [x], y: [y], mode: "markers+text", name, text: [text], textposition: sym === "triangle-down" ? "top center" : "bottom center",
+    textfont: { color: css("--ink"), size: 11 }, marker: { symbol: sym, size: 14, color, line: { color: css("--surface"), width: 2 } }, hovertemplate: name + " %{y:.2f}<extra></extra>" });
+  traces.push(mk(t.entry_date, t.entry_px, "triangle-up", css("--s1"), "Entry", "BUY " + num(t.entry_px)));
+  if (t.t1_date) traces.push(mk(t.t1_date, t.t1_px, "diamond", css("--s3"), "T1 (50% booked)", "T1 " + num(t.t1_px)));
+  if (t.reason !== "OPEN") traces.push(mk(t.exit_date, t.exit_px, "triangle-down", t.pnl >= 0 ? css("--s3") : css("--neg"), "Exit " + t.reason, t.reason + " " + num(t.exit_px)));
+  Plotly.react("tradeChart", traces, baseLayout({
+    shapes, hovermode: "x unified", showlegend: true, legend: { orientation: "h", x: 0, y: 1.06 },
+    xaxis: { rangeslider: { visible: false }, gridcolor: css("--grid"), type: "date", rangebreaks: [{ bounds: ["sat", "mon"] }] },
+    yaxis: { gridcolor: css("--grid"), tickprefix: "₹" },
+    annotations: [
+      { x: t.entry_date, y: t.sl_px, text: "SL " + num(t.sl_px), showarrow: false, xanchor: "left", yanchor: "top", font: { size: 11, color: css("--ink2") } },
+      { x: t.entry_date, y: t.tp_px, text: "Target " + num(t.tp_px), showarrow: false, xanchor: "left", yanchor: "bottom", font: { size: 11, color: css("--ink2") } },
+    ],
+  }), cfgPlot);
+}
+
+function drawAll() { drawEquity(); drawYear(); drawMonth(); drawHist(); showTrade(current); }
+drawTradeTable();
+drawAll();
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", drawAll);
+new MutationObserver(drawAll).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+</script>
+</body>
+</html>

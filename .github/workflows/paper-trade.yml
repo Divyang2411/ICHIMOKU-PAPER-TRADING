@@ -1,0 +1,70 @@
+name: Daily paper trade
+
+# Runs after NSE close (15:30 IST) on weekdays: downloads the day's bars,
+# applies exits/entries with the backtest rules, commits paper/ state back
+# to the repo and uploads the HTML report as a build artifact.
+on:
+  schedule:
+    - cron: "47 10 * * 1-5"      # 16:17 IST
+  workflow_dispatch:
+    inputs:
+      backtest:
+        description: "Also run the full backtest and upload its report"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: paper-trade
+  cancel-in-progress: false
+
+jobs:
+  paper:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements.txt
+
+      - name: Restore price cache
+        uses: actions/cache@v4
+        with:
+          path: data
+          key: prices-${{ github.run_id }}
+          restore-keys: prices-
+
+      - name: Open paper account (first run only)
+        run: |
+          if [ ! -f paper/state.json ]; then python main.py paper init; fi
+
+      - name: Process today's bars
+        run: python main.py paper run
+
+      - name: Paper report
+        run: python main.py --offline paper report
+
+      - name: Backtest
+        if: ${{ inputs.backtest }}
+        run: python main.py --offline backtest
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reports-${{ github.run_number }}
+          path: |
+            paper/report.html
+            results/backtest/
+
+      - name: Commit paper state
+        run: |
+          git config user.name "paper-trader-bot"
+          git config user.email "paper-trader-bot@users.noreply.github.com"
+          git add paper/ nifty200.txt
+          if git diff --cached --quiet; then echo "No changes"; exit 0; fi
+          git commit -m "Paper trade $(date -u +%F)"
+          git push
