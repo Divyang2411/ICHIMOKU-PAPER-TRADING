@@ -20,8 +20,10 @@ def load_nifty200_symbols(refresh=True):
         r = requests.get(NSE_LIST_URL, headers={"User-Agent": "Mozilla/5.0"}, timeout=20)
         r.raise_for_status()
         syms = pd.read_csv(io.StringIO(r.text))["Symbol"].str.strip().tolist()
-        with open(C.SYMBOLS_FILE, "w") as f:
-            f.write("\n".join(syms) + "\n")
+        old = [x.strip() for x in open(C.SYMBOLS_FILE) if x.strip() and not x.startswith("#")] if os.path.exists(C.SYMBOLS_FILE) else None
+        if syms != old:           # rewrite only on a real index change (keeps git pull clean)
+            with open(C.SYMBOLS_FILE, "w") as f:
+                f.write("\n".join(syms) + "\n")
         return syms
     except Exception as e:
         print("NSE download failed:", e)

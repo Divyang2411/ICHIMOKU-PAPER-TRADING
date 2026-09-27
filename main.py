@@ -86,8 +86,9 @@ def cmd_scan(args):
     from ichimoku.scanner import scan
     data = get_data(args)
     sc = scan(data, C.CFG, C.STRATEGY)
-    os.makedirs(C.RESULTS_DIR, exist_ok=True)
-    path = os.path.join(C.RESULTS_DIR, "scan_latest.csv")
+    out = os.path.join(C.RESULTS_DIR, "demo") if args.demo else C.RESULTS_DIR   # demo never overwrites the real scan
+    os.makedirs(out, exist_ok=True)
+    path = os.path.join(out, "scan_latest.csv")
     sc.to_csv(path, index=False, float_format="%.2f")
     sig = sc[sc.signal]
     print(f"Scan date {sc.date.max()} | {len(sc)} stocks | {len(sig)} buy signal(s)\n")

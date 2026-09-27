@@ -72,23 +72,28 @@ Useful flags:
 python main.py serve                    # opens http://127.0.0.1:8000
 ```
 
-On macOS you can instead double-click `start_dashboard.command`. The first time, it creates `.venv`, installs everything and pulls the latest paper state; then it opens the dashboard. It listens only on your own computer (127.0.0.1), so nobody else can reach it.
+On macOS you can instead double-click `start_dashboard.command`. The first time, it creates `.venv` and installs everything. It listens only on your own computer (127.0.0.1), so nobody else can reach it.
+
+**No buttons needed.** When the site starts, and every hour while it stays open, it updates everything by itself:
+
+1. `git pull`: brings in the paper trades the daily GitHub Action made.
+2. Downloads the latest prices and re-runs the Nifty 200 scan.
+3. Re-runs the backtest up to the latest trading day.
+4. Rebuilds the paper report.
+
+While it works, the dashboard shows which step it is on and reloads itself. The very first run downloads 12 years of prices, which takes 5–10 minutes; later runs take 1–2 minutes. A step that fails, such as no internet, is logged on the **Activity** page and the rest still run.
 
 | Page | What it shows |
 |---|---|
 | **Dashboard** | Paper equity, return, cash, open positions with their stop and target, latest executions, today's buy signals |
-| **Paper portfolio** | The full interactive paper-trading report, rebuilt automatically whenever the account changes |
+| **Paper portfolio** | The full interactive paper-trading report |
 | **Today's scan** | All Nifty 200 stocks with signal, score, Kijun distance and ROC |
 | **Backtest** | The full backtest report |
-| **Activity** | Buttons for every job and a live log of the one running |
+| **Activity** | Log of the last update, plus optional manual buttons |
 
-Buttons:
+The Activity page's **Run paper trade now** button is only for trading the account on your Mac instead of GitHub. Using both makes the two copies of `paper/` clash.
 
-- **Sync from GitHub** (`git pull`): brings in the paper trades the daily GitHub Action made.
-- **Scan Nifty 200**, **Rebuild paper report**, **Run full backtest**.
-- **Run paper trade now**, on the Activity page: only use this if you trade the account on your Mac instead of GitHub. Using both makes the two copies of `paper/` clash.
-
-Stop the site with Ctrl+C. To open it from your phone on the same Wi-Fi, run `python main.py serve --host 0.0.0.0` and visit `http://<your-mac-ip>:8000`. Anyone on that network can then open it too.
+Stop the site with Ctrl+C in its Terminal window, or close that window. To open it from your phone on the same Wi-Fi, run `python main.py serve --host 0.0.0.0` and visit `http://<your-mac-ip>:8000`. Anyone on that network can then open it too.
 
 ### What a daily paper run does
 
