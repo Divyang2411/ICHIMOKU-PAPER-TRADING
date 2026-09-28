@@ -66,22 +66,25 @@ On macOS you can instead double-click `start_dashboard.command`. The first time,
 
 **No buttons needed.** When the site starts, and every hour while it stays open, it updates everything by itself:
 
-1. `git pull`: brings in the paper trades the daily GitHub Action made.
-2. Downloads the latest prices and re-runs the Nifty 200 scan.
+1. `git pull`: brings in the paper account the daily GitHub Action keeps.
+2. Downloads the latest prices.
 3. Re-runs the backtest up to the latest trading day.
-4. Rebuilds the paper report.
 
 While it works, the dashboard shows which step it is on and reloads itself. The very first run downloads 12 years of prices, which takes 5–10 minutes; later runs take 1–2 minutes. A step that fails, such as no internet, is logged on the **Activity** page and the rest still run.
 
 | Page | What it shows |
 |---|---|
-| **Dashboard** | Paper equity, return, cash, open positions with their stop and target, latest executions, today's buy signals |
-| **Paper portfolio** | The full interactive paper-trading report |
-| **Today's scan** | All Nifty 200 stocks with signal, score, Kijun distance and ROC |
-| **Backtest** | The full backtest report |
-| **Activity** | Log of the last update, plus optional manual buttons |
+| **Dashboard** | Paper account performance: equity, return, drawdown, cash, number of open positions, closed trades |
+| **Backtest** | The historical backtest report |
+| **Activity** | Log of the last update, plus buttons to update now or re-run the backtest |
 
-The Activity page's **Run paper trade now** button is only for trading the account on your Mac instead of GitHub. Using both makes the two copies of `paper/` clash.
+**The website never shows signals.** The scan and the paper trading run in the background (the daily GitHub Action and `python main.py ...`), but no page shows:
+
+- buy signals or the scan
+- current positions or their stop-loss and target levels
+- recent buys and sells
+
+Reports list only finished trades; positions still open at the last bar count in the totals but are not listed.
 
 Stop the site with Ctrl+C in its Terminal window, or close that window. To open it from your phone on the same Wi-Fi, run `python main.py serve --host 0.0.0.0` and visit `http://<your-mac-ip>:8000`. Anyone on that network can then open it too.
 
@@ -122,9 +125,9 @@ To use it, enable Actions for the repo. You can also start it by hand from the A
 - Return by year, a monthly returns heatmap and a year-by-year table.
 - A P&L breakdown by exit reason and a histogram of trade returns.
 - **A trade chart:** pick any trade to see its candles with Tenkan, Kijun and the cloud, and markers for entry ▲, T1 ◆ and exit ▼, with the SL and target lines.
-- A sortable, filterable table of all trades: entry, qty, SL, target, T1 leg, exit, reason, P&L and return.
-- The Nifty 200 scan table.
-- Paper reports also show open positions with their live stop and target, and the latest executions.
+- A sortable, filterable table of finished trades: entry, qty, SL, target, T1 leg, exit, reason, P&L and return.
+
+The report contains no scan, signals or current positions. Positions still open at the last bar count in the totals but are not listed or charted.
 
 ## Project layout
 

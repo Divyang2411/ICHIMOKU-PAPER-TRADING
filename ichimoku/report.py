@@ -92,12 +92,13 @@ def _inline_plotly(html):
 
 
 def build_report(path, *, title, subtitle, eq, trades, n_open, data, cfg, strategy, trail,
-                 positions=None, scan_df=None, recent_exec=None, benchmark=None, demo=False):
+                 benchmark=None, demo=False):
     trades = trades.copy().reset_index(drop=True)
     for c in ("entry_date", "exit_date", "t1_date"):
         trades[c] = pd.to_datetime(trades[c])
     m = metrics(eq, trades, n_open, cfg) if len(eq) > 1 else {}
     closed = trades[trades.reason != "OPEN"]
+    closed_list = closed.reset_index(drop=True)
     by_reason = (closed.groupby("reason").agg(trades=("pnl", "size"), net_pnl=("pnl", "sum"), avg_ret_pct=("ret_pct", "mean"),
                                               win_rate_pct=("pnl", lambda s: (s > 0).mean() * 100), avg_days=("days", "mean"))
                  .reset_index()) if len(closed) else pd.DataFrame()
@@ -125,12 +126,10 @@ def build_report(path, *, title, subtitle, eq, trades, n_open, data, cfg, strate
         yearly=_records(_yearly(eq, trades)) if len(eq) else [],
         monthly=(lambda mm: dict(years=[int(y) for y in mm.index], z=[[_r(v) for v in row] for row in mm.reindex(columns=range(1, 13)).values]))(_monthly(eq)) if len(eq) > 20 else None,
         by_reason=_records(by_reason),
-        trades=_records(trades[tcols]),
-        windows=_trade_windows(trades, data, cfg),
-        positions=_records(positions) if positions is not None and len(positions) else [],
-        scan=_records(scan_df.head(60)) if scan_df is not None and len(scan_df) else [],
-        scan_date=str(scan_df.date.iloc[0]) if scan_df is not None and len(scan_df) else None,
-        recent=_records(recent_exec) if recent_exec is not None and len(recent_exec) else [],
+        # only finished trades are listed/charted: still-open positions (current holdings) never appear
+        trades=_records(closed_list[tcols]),
+        windows=_trade_windows(closed_list, data, cfg),
+        open_hidden=int((trades.reason == "OPEN").sum()),
     )
     html = open(TEMPLATE).read().replace("/*__DATA__*/null", json.dumps(payload, separators=(",", ":")).replace("</", "<\\/"))
     html = html.replace("__TITLE__", title)

@@ -85,13 +85,6 @@ button.on { background: var(--s1); color: #fff; border-color: var(--s1); }
   <h2>Summary</h2>
   <div class="tiles" id="tiles"></div>
 
-  <section id="paperSection" hidden>
-    <h2>Open positions (paper portfolio)</h2>
-    <div class="tablewrap" id="positions"></div>
-    <h2>Latest executions</h2>
-    <div class="tablewrap" id="recent"></div>
-  </section>
-
   <h2>Equity curve</h2>
   <div class="card">
     <div class="controls"><button id="logBtn" class="on">Log scale</button><button id="linBtn">Linear</button></div>
@@ -131,12 +124,8 @@ button.on { background: var(--s1); color: #fff; border-color: var(--s1); }
     <span class="note" id="tradeCount"></span>
   </div>
   <div class="tablewrap" id="tradeTable"></div>
+  <p class="note" id="openNote"></p>
 
-  <section id="scanSection" hidden>
-    <h2 id="scanTitle">Nifty 200 scan</h2>
-    <p class="note">Signal = close crossed above Kijun while above the cloud (the strategy's buy trigger), ranked by 26-day ROC as the engine does. Score 0-5 = above cloud, Tenkan &gt; Kijun, close &gt; Kijun, future cloud bullish, Chikou above price 26 bars back.</p>
-    <div class="tablewrap" id="scanTable"></div>
-  </section>
 </main>
 
 <script>
@@ -204,32 +193,6 @@ table($("reasonTable"), D.by_reason, [
   { k: "reason", t: "Exit", l: 1, f: reasonTag }, { k: "trades", t: "Trades" }, { k: "net_pnl", t: "Net P&L", f: v => inr(v), c: 1 },
   { k: "avg_ret_pct", t: "Avg return", f: v => pct(v), c: 1 }, { k: "win_rate_pct", t: "Win rate", f: v => num(v, 1) + "%" }, { k: "avg_days", t: "Avg bars", f: v => num(v, 0) },
 ], { empty: "No closed trades yet." });
-
-if (D.positions.length || D.recent.length || D.title.toLowerCase().includes("paper")) {
-  $("paperSection").hidden = false;
-  table($("positions"), D.positions, [
-    { k: "symbol", t: "Symbol", l: 1 }, { k: "entry_date", t: "Entry date", l: 1 }, { k: "entry_px", t: "Entry", f: v => num(v) },
-    { k: "qty_open", t: "Qty" }, { k: "last_close", t: "Last close", f: v => num(v) }, { k: "ret_pct", t: "Return", f: v => pct(v), c: 1 },
-    { k: "unrealized_pnl", t: "P&L", f: v => inr(v), c: 1 }, { k: "stop_loss", t: "Stop now", f: v => num(v) },
-    { k: "target_t1", t: "T1 target", f: v => num(v) }, { k: "stage", t: "Stage", l: 1 }, { k: "days_held", t: "Bars held" },
-  ], { empty: "No open positions." });
-  table($("recent"), D.recent, [
-    { k: "date", t: "Date", l: 1 }, { k: "action", t: "Action", l: 1 }, { k: "symbol", t: "Symbol", l: 1 },
-    { k: "qty", t: "Qty" }, { k: "fill_px", t: "Price", f: v => num(v) }, { k: "rule", t: "Fill rule", l: 1 },
-  ], { empty: "No executions yet." });
-}
-
-if (D.scan.length) {
-  $("scanSection").hidden = false;
-  $("scanTitle").textContent = `Nifty 200 scan — ${D.scan_date} (top ${D.scan.length})`;
-  table($("scanTable"), D.scan, [
-    { k: "symbol", t: "Symbol", l: 1 }, { k: "signal", t: "Buy signal", f: v => v ? "<b class='pos'>BUY</b>" : "" },
-    { k: "score", t: "Score" }, { k: "vs_cloud", t: "vs cloud", l: 1 }, { k: "close", t: "Close", f: v => num(v) },
-    { k: "kijun", t: "Kijun", f: v => num(v) }, { k: "dist_kijun_pct", t: "vs Kijun", f: v => pct(v), c: 1 },
-    { k: "roc26_pct", t: "ROC 26", f: v => pct(v), c: 1 }, { k: "near_cross", t: "Near cross", f: v => v ? "yes" : "" },
-    { k: "stop_loss", t: "SL if bought", f: v => num(v) }, { k: "target_t1", t: "T1 if bought", f: v => num(v) },
-  ]);
-}
 
 // ---------------------------------------------------------------- charts
 const cfgPlot = { displaylogo: false, responsive: true, modeBarButtonsToRemove: ["lasso2d", "select2d", "autoScale2d"] };
@@ -355,7 +318,7 @@ function showTrade(id, scroll = true) {
   ];
   const mk = (x, y, sym, color, name, text) => ({ x: [x], y: [y], mode: "markers+text", name, text: [text], textposition: sym === "triangle-down" ? "top center" : "bottom center",
     textfont: { color: css("--ink"), size: 11 }, marker: { symbol: sym, size: 14, color, line: { color: css("--surface"), width: 2 } }, hovertemplate: name + " %{y:.2f}<extra></extra>" });
-  traces.push(mk(t.entry_date, t.entry_px, "triangle-up", css("--s1"), "Entry", "BUY " + num(t.entry_px)));
+  traces.push(mk(t.entry_date, t.entry_px, "triangle-up", css("--s1"), "Entry", "Entry " + num(t.entry_px)));
   if (t.t1_date) traces.push(mk(t.t1_date, t.t1_px, "diamond", css("--s3"), "T1 (50% booked)", "T1 " + num(t.t1_px)));
   if (t.reason !== "OPEN") traces.push(mk(t.exit_date, t.exit_px, "triangle-down", t.pnl >= 0 ? css("--s3") : css("--neg"), "Exit " + t.reason, t.reason + " " + num(t.exit_px)));
   Plotly.react("tradeChart", traces, baseLayout({
@@ -370,6 +333,7 @@ function showTrade(id, scroll = true) {
 }
 
 function drawAll() { drawEquity(); drawYear(); drawMonth(); drawHist(); showTrade(current); }
+if (D.open_hidden) $("openNote").textContent = `${D.open_hidden} position(s) still open at the last bar are included in the equity and P&L totals but are not listed.`;
 drawTradeTable();
 drawAll();
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", drawAll);

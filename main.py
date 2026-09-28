@@ -3,6 +3,7 @@
 
   python main.py backtest            full backtest 2015 -> today, writes results/ + HTML report
   python main.py scan                today's Nifty 200 Ichimoku scan (buy signals + health table)
+  python main.py update-data         download the latest prices only
   python main.py paper init          open a paper account (Rs 5,00,000 by default)
   python main.py paper run           process new daily bars: exits, then entries at close
   python main.py paper status        print positions / equity without downloading
@@ -54,7 +55,6 @@ def cmd_backtest(args):
     from ichimoku.engine import metrics, simulate
     from ichimoku.indicators import build_panel
     from ichimoku.report import build_report, save_png_summary
-    from ichimoku.scanner import scan
 
     data = get_data(args)
     print(f"{len(data)} symbols loaded")
@@ -71,15 +71,20 @@ def cmd_backtest(args):
     eq.to_frame("equity").assign(open_positions=n_open).to_csv(os.path.join(out, "equity_curve.csv"))
     pd.Series(m).to_frame("value").to_csv(os.path.join(out, "metrics.csv"))
     save_png_summary(os.path.join(out, "equity_summary.png"), eq, trades, C.CFG, "Ichimoku Nifty 200 backtest")
-    sc = scan(data, C.CFG, C.STRATEGY)
-    sc.to_csv(os.path.join(out, "scan_latest.csv"), index=False, float_format="%.2f")
     path = build_report(os.path.join(out, "report.html"),
                         title="Ichimoku Nifty 200 — Backtest" + (" (DEMO DATA)" if args.demo else ""),
                         subtitle=f"{len(P['syms'])} stocks · entries at close · ranked by 26-day ROC · Rs {C.CFG['capital']:,.0f} starting capital",
                         eq=eq, trades=trades, n_open=n_open, data=data, cfg=C.CFG, strategy=C.STRATEGY, trail=C.TRAIL,
-                        scan_df=sc, benchmark=get_benchmark(args, eq), demo=args.demo)
-    print(f"\nWrote {out}/: trades.csv executions.csv equity_curve.csv metrics.csv equity_summary.png scan_latest.csv")
+                        benchmark=get_benchmark(args, eq), demo=args.demo)
+    print(f"\nWrote {out}/: trades.csv executions.csv equity_curve.csv metrics.csv equity_summary.png")
     print("Open the report:", path)
+
+
+def cmd_update_data(args):
+    """Refresh the price cache only (used by the website; prints no signals)."""
+    data = get_data(args)
+    last = max(d.index[-1] for d in data.values()).date()
+    print(f"Prices updated: {len(data)} symbols, last bar {last}")
 
 
 def cmd_scan(args):
@@ -118,7 +123,6 @@ def cmd_paper(args):
     elif args.action in ("status", "report"):
         from ichimoku.engine import Engine
         from ichimoku.indicators import build_panel
-        from ichimoku.scanner import scan
         e, st = Engine.load(paper.STATE_FILE)
         if args.demo:
             data = synthetic_data()
@@ -141,8 +145,7 @@ def cmd_paper(args):
                             title="Ichimoku Nifty 200 — Paper Trading" + (" (DEMO DATA)" if args.demo else ""),
                             subtitle=f"Forward test since {st['start_date']} · same rules as the backtest · last bar {eq.index[-1].date()}",
                             eq=eq, trades=trades, n_open=n_open, data=data, cfg=e.cfg, strategy=tuple(st["strategy"]), trail=e.trail,
-                            positions=e.positions_frame(), scan_df=scan(data, e.cfg, tuple(st["strategy"])),
-                            recent_exec=ledger.tail(30).iloc[::-1] if len(ledger) else None, demo=args.demo)
+                            demo=args.demo)
         print("Open the report:", path)
 
 
@@ -168,6 +171,7 @@ def main(argv=None):
     sub = ap.add_subparsers(dest="cmd", required=True)
     b = sub.add_parser("backtest"); b.add_argument("--start", help="first trading date (default 2015-01-01)")
     sub.add_parser("scan")
+    sub.add_parser("update-data", help="download the latest prices only")
     w = sub.add_parser("serve", help="local website on http://127.0.0.1:8000")
     w.add_argument("--port", type=int, default=8000)
     w.add_argument("--host", default="127.0.0.1", help="0.0.0.0 to open it from your phone on the same Wi-Fi")
@@ -177,7 +181,7 @@ def main(argv=None):
     p.add_argument("--capital", type=float, help="init: starting capital (default 500000)")
     p.add_argument("--force", action="store_true", help="init: overwrite an existing account")
     args = ap.parse_args(argv)
-    {"backtest": cmd_backtest, "scan": cmd_scan, "paper": cmd_paper, "serve": cmd_serve}[args.cmd](args)
+    {"backtest": cmd_backtest, "scan": cmd_scan, "update-data": cmd_update_data, "paper": cmd_paper, "serve": cmd_serve}[args.cmd](args)
 
 
 if __name__ == "__main__":
