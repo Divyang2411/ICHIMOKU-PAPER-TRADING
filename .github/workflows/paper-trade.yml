@@ -1,13 +1,17 @@
 name: Daily paper trade
 
-# Runs after NSE close (15:30 IST) on weekdays. The paper account is stored
-# ENCRYPTED in paper.enc (key = repository secret PAPER_KEY), and nothing the
-# account holds or trades is printed to the log or uploaded as an artifact, so
-# the public repo never shows positions, trades or signals.
+# Runs after NSE close (15:30 IST) on weekdays: downloads the day's bars,
+# applies exits/entries with the backtest rules, commits paper/ state back
+# to the repo and uploads the HTML report as a build artifact.
 on:
   schedule:
     - cron: "47 10 * * 1-5"      # 16:17 IST
   workflow_dispatch:
+    inputs:
+      backtest:
+        description: "Also run the full backtest and upload its report"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -20,16 +24,7 @@ jobs:
   paper:
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    env:
-      PAPER_KEY: ${{ secrets.PAPER_KEY }}
     steps:
-      - name: Require the encryption key
-        run: |
-          if [ -z "$PAPER_KEY" ]; then
-            echo "::error::Add the repository secret PAPER_KEY (see README: 'Private paper account')."
-            exit 1
-          fi
-
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
@@ -44,32 +39,35 @@ jobs:
           key: prices-${{ github.run_id }}
           restore-keys: prices-
 
-      - name: Decrypt paper account
+      - name: Open paper account (first run only)
         run: |
-          if [ -f paper.enc ]; then python main.py paper unlock > /dev/null; fi
-          # first run ever (or migration from the old unencrypted paper/ files): open the account
-          if [ ! -f paper/state.json ]; then python main.py paper init > /dev/null; fi
+          if [ ! -f paper/state.json ]; then python main.py paper init; fi
 
-      # output is hidden on purpose: it lists executions and positions (and an error could name a held stock)
       - name: Process today's bars
-        run: |
-          if ! python main.py paper run > /dev/null 2> run.err; then
-            echo "::error::Paper run failed ($(grep -oE '^[A-Za-z]+(Error|Exit|Exception)' run.err | tail -1)). Details are hidden to keep the account private; run the Jupyter cell to see the full error."
-            exit 1
-          fi
+        run: python main.py paper run
 
-      - name: Encrypt and commit
+      - name: Paper report
+        continue-on-error: true      # a report problem must never block saving the trades
+        run: python main.py --offline paper report
+
+      - name: Backtest
+        if: ${{ inputs.backtest }}
+        run: python main.py --offline backtest
+
+      - uses: actions/upload-artifact@v4
+        continue-on-error: true      # e.g. artifact storage quota full on a private repo
+        with:
+          name: reports-${{ github.run_number }}
+          retention-days: 14         # keeps storage well under the private-repo free quota
+          path: |
+            paper/report.html
+            results/backtest/
+
+      - name: Commit paper state
         run: |
-          python main.py paper lock > /dev/null
           git config user.name "paper-trader-bot"
           git config user.email "paper-trader-bot@users.noreply.github.com"
-          git rm -r -q --cached --ignore-unmatch paper
-          git add paper.enc nifty200.txt
+          git add paper/ nifty200.txt
           if git diff --cached --quiet; then echo "No changes"; exit 0; fi
-          git commit -q -m "Update paper account (encrypted)"
-          # main may have moved while we ran (e.g. a merged PR): rebase onto it and retry
-          for i in 1 2 3; do
-            if git push -q; then exit 0; fi
-            git pull -q --rebase origin main || { git rebase --abort; exit 1; }
-          done
-          exit 1
+          git commit -m "Paper trade $(date -u +%F)"
+          git push
