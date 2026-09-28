@@ -7,3 +7,5 @@ paper_demo/
 paper/report.html
 *.pkl
 .ipynb_checkpoints/
+paper/
+paper.key
