@@ -29,19 +29,17 @@ OPT = False
 JOBS = {
     "auto": ("Updating everything", [
         (["git", "pull", "--ff-only", "--autostash"], OPT),                       # paper trades made by the GitHub Action
-        ([PY, MAIN, "paper", "unlock"], OPT),                      # decrypt them with your key
         ([PY, MAIN, "scan"], OPT),                                 # downloads the latest prices + scans
         ([PY, MAIN, "--offline", "backtest"], OPT),                # backtest up to the latest bar
         ([PY, MAIN, "paper", "report"], OPT),
     ]),
-    "sync": ("Sync paper account from GitHub", [(["git", "pull", "--ff-only", "--autostash"], True), ([PY, MAIN, "paper", "unlock"], True),
-                                                ([PY, MAIN, "paper", "report"], True)]),
+    "sync": ("Sync paper account from GitHub", [(["git", "pull", "--ff-only", "--autostash"], True), ([PY, MAIN, "paper", "report"], True)]),
     "paper": ("Run paper trade now (local account)", [([PY, MAIN, "paper", "run"], True), ([PY, MAIN, "--offline", "paper", "report"], True)]),
     "report": ("Rebuild paper report", [([PY, MAIN, "paper", "report"], True)]),
     "scan": ("Scan Nifty 200", [([PY, MAIN, "scan"], True)]),
     "backtest": ("Run full backtest", [([PY, MAIN, "backtest"], True)]),
 }
-STEP_NAMES = {"git": "Pulling latest paper trades from GitHub", "unlock": "Decrypting the paper account", "scan": "Downloading latest prices and scanning Nifty 200",
+STEP_NAMES = {"git": "Pulling latest paper trades from GitHub", "scan": "Downloading latest prices and scanning Nifty 200",
               "backtest": "Running the backtest", "paper": "Building the paper report"}
 AUTO_EVERY_MIN = 60          # while the site is open, refresh everything this often
 
@@ -63,7 +61,7 @@ class Job:
     def _run(cls, cmds):
         ok = True
         for n, (cmd, required) in enumerate(cmds, 1):
-            word = "git" if cmd[0] == "git" else next((w for w in ("unlock", "backtest", "scan", "paper") if w in cmd), "")
+            word = "git" if cmd[0] == "git" else next((w for w in ("backtest", "scan", "paper") if w in cmd), "")
             cls.step = f"Step {n} of {len(cmds)}: {STEP_NAMES.get(word, ' '.join(cmd[2:]))}…"
             cls.log += "$ " + " ".join(os.path.basename(c) if c in (PY, MAIN) else c for c in cmd) + "\n"
             try:

@@ -4,11 +4,9 @@ A complete system for the Ichimoku strategy from `notebooks/ICHIMOKU_FINAL_BACKT
 
 1. **Scanner**: scans every Nifty 200 stock each day and lists buy signals, near-signals and an Ichimoku health score.
 2. **Backtest**: runs 2015 to today with ₹5,00,000 and writes an interactive report with the equity curve, drawdown, yearly and monthly returns, and every trade's entry, exit, SL, target and P&L on a candlestick chart with the cloud.
-3. **Paper trading**: forward-tests the same rules on live daily data with a ₹5,00,000 virtual account. A GitHub Action runs it after every market close and stores the account **encrypted** (`paper.enc`).
+3. **Paper trading**: forward-tests the same rules on live daily data with a ₹5,00,000 virtual account. State is saved in `paper/`, and a GitHub Action can run it automatically after every market close.
 
 All three use one engine (`ichimoku/engine.py`), so the paper trader follows the backtest rules exactly.
-
-> **Disclaimer.** This is personal research software for educational use. It is not investment advice and does not publish any recommendations. This repository contains no results, positions, trades or signals: the paper account is encrypted with a key only the owner holds, and nothing it trades is printed in the Action logs or uploaded as an artifact.
 
 ## Strategy rules
 
@@ -68,7 +66,7 @@ On macOS you can instead double-click `start_dashboard.command`. The first time,
 
 **No buttons needed.** When the site starts, and every hour while it stays open, it updates everything by itself:
 
-1. `git pull`: brings in the paper trades the daily GitHub Action made, then decrypts them with your key.
+1. `git pull`: brings in the paper trades the daily GitHub Action made.
 2. Downloads the latest prices and re-runs the Nifty 200 scan.
 3. Re-runs the backtest up to the latest trading day.
 4. Rebuilds the paper report.
@@ -96,7 +94,7 @@ Each run processes every new bar since the last run, in the same order the backt
    - Target hit → sell 50% and switch to the trailing stop.
    - Trail or breakeven hit → sell the rest.
 2. **Entries** at the close: new signals ranked by ROC fill the free slots, each sized at 10% of equity.
-3. **Saved files** (in `paper/`, git-ignored; on GitHub only the encrypted `paper.enc` is committed):
+3. **Saved files**: state and all outputs go to `paper/`:
    - `state.json`: the full account, which is the source of truth
    - `positions.csv`: holdings with today's stop-loss, T1 target and stage
    - `trades.csv`, `executions.csv`, `equity.csv`
@@ -105,37 +103,15 @@ Each run processes every new bar since the last run, in the same order the backt
 
 If you run it before 15:45 IST, today's unfinished bar is skipped. A missed day is not a problem: the next run catches up bar by bar.
 
-### Private paper account (GitHub Actions, encrypted)
+### Automatic daily run (GitHub Actions)
 
-`.github/workflows/paper-trade.yml` runs on weekdays at 16:17 IST. It decrypts `paper.enc`, processes the day's bars, encrypts the account again and commits only `paper.enc`. Its log shows no executions or positions, and it uploads no artifacts.
+`.github/workflows/paper-trade.yml` runs on weekdays at 16:17 IST:
 
-One-time setup:
+- It opens the account on its first run.
+- It processes the day's bars and commits `paper/` back to the repo.
+- It uploads `paper/report.html` as a build artifact.
 
-1. Make a key on your Mac (in the project folder):
-   ```bash
-   python main.py paper newkey
-   ```
-2. Save the key on your Mac so only you can decrypt, replacing `<key>` with the printed key:
-   ```bash
-   echo "<key>" > ~/.ichimoku_paper_key && chmod 600 ~/.ichimoku_paper_key
-   ```
-3. Add it on GitHub under **Settings → Secrets and variables → Actions → New repository secret**, with name `PAPER_KEY` and the same key as its value.
-4. Start the first run from **Actions → Daily paper trade → Run workflow**. That run moves the account into `paper.enc` and removes the old readable `paper/` files from the repo.
-
-Keep the key safe. Without it the paper account cannot be read. Anyone who gets the key can read it.
-
-To work with the account locally: `python main.py paper unlock` decrypts `paper.enc` into `paper/`, which git ignores. `paper lock` encrypts it again.
-
-### Your results in Jupyter (one cell)
-
-Copy `notebooks/my_results_cell.py` into a single Jupyter cell, in a notebook kept **outside** the repo folder, and run it. It:
-
-- clones or pulls the repo
-- decrypts the paper account with `~/.ichimoku_paper_key`
-- downloads the latest prices
-- shows the backtest (metrics, equity, drawdown, yearly returns, trades), today's scan, and the paper account (equity, positions with stops and targets, executions, closed trades)
-
-It also writes the interactive HTML reports on your computer only. Set `OPEN_REPORTS = True` to open them in your browser automatically.
+To use it, enable Actions for the repo. You can also start it by hand from the Actions tab with **Run workflow**; tick *backtest* to get the full backtest report as well.
 
 ## The report
 
@@ -162,10 +138,8 @@ ichimoku/scanner.py         daily scan
 ichimoku/paper.py           paper-trading driver
 ichimoku/report.py          HTML/PNG report
 ichimoku/web.py             local website (python main.py serve)
-ichimoku/vault.py           encryption of the paper account (paper.enc)
-notebooks/my_results_cell.py  one Jupyter cell with all your results
 start_dashboard.command     macOS double-click launcher
-tests/                      engine == notebook; paper day-by-day == backtest; encryption
+tests/                      engine == notebook; paper day-by-day == backtest
 notebooks/                  original research notebook
 ```
 

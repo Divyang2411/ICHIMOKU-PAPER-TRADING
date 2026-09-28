@@ -7,9 +7,6 @@
   python main.py paper run           process new daily bars: exits, then entries at close
   python main.py paper status        print positions / equity without downloading
   python main.py paper report        HTML report of the paper account
-  python main.py paper newkey        make the secret key that encrypts the paper account on GitHub
-  python main.py paper unlock        decrypt paper.enc -> paper/ (after git pull)
-  python main.py paper lock          encrypt paper/ -> paper.enc
   python main.py serve               local website: dashboard, reports, one-click updates
 
 Add --demo to any command to use synthetic prices (offline smoke test; numbers are meaningless).
@@ -114,19 +111,6 @@ def cmd_paper(args):
     if args.demo:
         C.PAPER_DIR = os.path.join(C.ROOT, "paper_demo")
         paper.STATE_FILE = os.path.join(C.PAPER_DIR, "state.json")
-    if args.action in ("newkey", "lock", "unlock"):
-        from ichimoku import vault
-        if args.action == "newkey":
-            print(vault.new_key())
-        elif args.action == "lock":
-            vault.lock()
-            print("Encrypted paper/ ->", vault.ENC_FILE)
-        else:
-            if not os.path.exists(vault.ENC_FILE):
-                raise SystemExit("paper.enc not found (git pull first).")
-            vault.unlock()
-            print("Decrypted paper.enc -> paper/")
-        return
     if args.action == "init":
         paper.init(start_date=args.start, capital=args.capital, force=args.force)
     elif args.action == "run":
@@ -188,7 +172,7 @@ def main(argv=None):
     w.add_argument("--port", type=int, default=8000)
     w.add_argument("--host", default="127.0.0.1", help="0.0.0.0 to open it from your phone on the same Wi-Fi")
     p = sub.add_parser("paper")
-    p.add_argument("action", choices=["init", "run", "status", "report", "newkey", "lock", "unlock"])
+    p.add_argument("action", choices=["init", "run", "status", "report"])
     p.add_argument("--start", help="init: first bar to paper trade (default today)")
     p.add_argument("--capital", type=float, help="init: starting capital (default 500000)")
     p.add_argument("--force", action="store_true", help="init: overwrite an existing account")
