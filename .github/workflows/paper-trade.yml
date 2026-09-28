@@ -67,4 +67,9 @@ jobs:
           git add paper.enc nifty200.txt
           if git diff --cached --quiet; then echo "No changes"; exit 0; fi
           git commit -q -m "Update paper account (encrypted)"
-          git push -q
+          # main may have moved while we ran (e.g. a merged PR): rebase onto it and retry
+          for i in 1 2 3; do
+            if git push -q; then exit 0; fi
+            git pull -q --rebase origin main || { git rebase --abort; exit 1; }
+          done
+          exit 1
