@@ -1,1 +1,2 @@
-
+symbol,entry_date,exit_date,entry_px,exit_px,entry_raw_px,exit_raw_px,qty,invested,pnl,ret_pct,hit_target,reason,peak_gain_pct,days,entry_open,entry_high,entry_low,entry_close,exit_open,exit_high,exit_low,exit_close,fill_rule,exit_level,sl_px,tp_px,t1_date,t1_raw_px,t1_px,t1_qty
+GLENMARK,2026-09-29,2026-09-29,2441.5,2441.5,2441.5,2441.5,20,48878.829999999994,-97.65999999999622,-0.1998001998001921,False,OPEN,0.0,0,2330.39990234375,2441.5,2292.0,2441.5,2330.39990234375,2441.5,2292.0,2441.5,last_close(MTM),,2148.52,3027.46,,,,0
