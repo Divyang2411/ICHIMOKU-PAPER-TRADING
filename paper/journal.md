@@ -1,1 +1,4 @@
 - 2026-09-29 | ENTRY            | GLENMARK     | qty     20 | @ 2,441.50
+- 2026-09-30 | ENTRY            | LENSKART     | qty     72 | @ 685.05
+- 2026-09-30 | ENTRY            | KOTAKBANK    | qty    119 | @ 417.00
+- 2026-09-30 | ENTRY            | MCX          | qty     15 | @ 3,300.40
