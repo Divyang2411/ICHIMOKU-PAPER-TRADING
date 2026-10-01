@@ -2,3 +2,5 @@
 - 2026-09-30 | ENTRY            | LENSKART     | qty     72 | @ 685.05
 - 2026-09-30 | ENTRY            | KOTAKBANK    | qty    119 | @ 417.00
 - 2026-09-30 | ENTRY            | MCX          | qty     15 | @ 3,300.40
+- 2026-10-01 | ENTRY            | APARINDS     | qty      2 | @ 17,648.00
+- 2026-10-01 | ENTRY            | AUROPHARMA   | qty     29 | @ 1,676.80
