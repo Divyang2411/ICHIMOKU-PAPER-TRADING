@@ -4,3 +4,7 @@
 - 2026-09-30 | ENTRY            | MCX          | qty     15 | @ 3,300.40
 - 2026-10-01 | ENTRY            | APARINDS     | qty      2 | @ 17,648.00
 - 2026-10-01 | ENTRY            | AUROPHARMA   | qty     29 | @ 1,676.80
+- 2026-10-05 | ENTRY            | MEESHO       | qty    218 | @ 226.50
+- 2026-10-05 | ENTRY            | NYKAA        | qty    146 | @ 339.55
+- 2026-10-05 | ENTRY            | BHEL         | qty    115 | @ 429.00
+- 2026-10-06 | ENTRY            | BLUESTARCO   | qty     32 | @ 1,571.50
