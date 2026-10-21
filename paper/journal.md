@@ -8,3 +8,4 @@
 - 2026-10-05 | ENTRY            | NYKAA        | qty    146 | @ 339.55
 - 2026-10-05 | ENTRY            | BHEL         | qty    115 | @ 429.00
 - 2026-10-06 | ENTRY            | BLUESTARCO   | qty     32 | @ 1,571.50
+- 2026-10-21 | EXIT_SL          | APARINDS     | qty      2 | @ 15,530.24
