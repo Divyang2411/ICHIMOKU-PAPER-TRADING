@@ -9,3 +9,4 @@
 - 2026-10-05 | ENTRY            | BHEL         | qty    115 | @ 429.00
 - 2026-10-06 | ENTRY            | BLUESTARCO   | qty     32 | @ 1,571.50
 - 2026-10-21 | EXIT_SL          | APARINDS     | qty      2 | @ 15,530.24
+- 2026-10-22 | ENTRY            | PHOENIXLTD   | qty     24 | @ 1,909.90
