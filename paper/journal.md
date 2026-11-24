@@ -12,3 +12,4 @@
 - 2026-10-22 | ENTRY            | PHOENIXLTD   | qty     24 | @ 1,909.90
 - 2026-10-23 | EXIT_SL          | GLENMARK     | qty     20 | @ 2,148.52
 - 2026-10-26 | ENTRY            | LAURUSLABS   | qty     22 | @ 2,058.90
+- 2026-11-23 | EXIT_T1          | KOTAKBANK    | qty     60 | @ 518.30
